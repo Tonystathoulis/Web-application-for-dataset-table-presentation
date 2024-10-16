@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EaseVis</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /*CSS STYLES*/
+        body {
+            font-family: Arial;
+            background-color: #d9f7ef;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #4158a9;
+            color: #fff;
+            padding: 1px 0;
+            text-align: center;
+
+        }
+
+        nav {
+            background-color: #00a1ab;
+            padding: 5px 0;
+            text-align: center;
+            border-radius: 0 0 10px 10px;
+            max-width: 370px; 
+        
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .navbar a, .dropdown-content button {
+            color: #fff;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 10px; 
+            margin: 0 10px; 
+            cursor: pointer;
+            background-color: #00a1ab; 
+            border: none;
+        }
+
+        .dropdown {
+            position: relative;
+        }
+
+        .dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #047c84;
+    min-width: 160px;
+    z-index: 1;
+    border-radius: 5px;
+    margin-top: 10px; 
+}
+
+        .dropdown-content button {
+            display: block;
+            width: 100%;
+            text-align: center;
+            border: none;
+            border-radius: 0;
+        }
+
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+
+        .hometext {
+            font-size: 25px; 
+            margin: 20px auto; 
+            max-width: 800px; 
+            
+        }
+
+        main {
+            padding: 20px 0;
+            text-align: center;
+        }
+
+        #visualization {
+            text-align: center;
+        }
+
+        #chart-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>〣EaseVis <span style="font-size: 16px;"> The Data Visualization Web App</span></h1>
+    </header>
+
+    <nav>
+        <div class="navbar">
+            <a href="#" class="active" onclick="clearCharts()">Home</a>
+            <div class="dropdown">
+                <a class="dropbtn">Datasets▼</a>
+                <div class="dropdown-content">
+                    <button onclick="fetchDataAndRenderCharts('carbonandairfilt')">● Dataset 1: Carbon sequestration & air filtration</button>
+                    <button onclick="fetchDataAndRenderCharts('bioriverquality')">● Dataset 2: Biological quality of rivers & canals</button>
+                    <button onclick="fetchDataAndRenderCharts('envbehaviours')">● Dataset 3: Environmental behaviours carried out by enterprises</button>
+                    <button onclick="fetchDataAndRenderCharts('natura2k')">● Dataset 4: Natura 2000 barometer statistics </button>
+                    <button onclick="triggerFileUpload()">● Upload a file</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <div id="chartContainer"></div>
+        <h2 class="hometext" style="color: #00a1ab;">Welcome to EaseVis <span style="font-size: 16px;">The Data Visualization Web App!</span> </h2>
+        <p class="hometext"><span style="font-size: 16px;">This web app allows you to explore various datasets and dynamically visualizes them in different graph formats for a better understanding. Use the navigation bar above to select a dataset and view its corresponding graph.</span></p>
+    </main>
+
+    <input type="file" id="fileInput" style="display: none;" accept=".csv" onchange="handleFileUpload(event)">
+
+    <footer>
+        
+    </footer>
+
+    <script>
+        //AJAX USED TO FETCH DATA FOR THE DESIRED DATASET
+        function fetchDataAndRenderCharts(dataset) {
+            fetch('webappserver.php')
+                .then(response => response.json())
+                .then(data => {
+                    renderCharts(data, dataset);
+                })
+                .catch(error => console.error('Error fetching data:', error));
+        }
+
+        function renderCharts(data, dataset) {
+            var chartContainer = document.getElementById('chartContainer');
+            chartContainer.innerHTML = ''; //CLEAR CHARTS
+
+             //THE TEXT ON HOME PAGE
+             var homeTextElements = document.querySelectorAll('.hometext');
+            homeTextElements.forEach(function(element) {
+                element.style.display = 'none';
+            });
+            //CHART CANVAS
+            var canvas = document.createElement('canvas');
+            canvas.style.height = '370px';
+            canvas.style.width = '100%';
+            chartContainer.appendChild(canvas);
+
+            var ctx = canvas.getContext('2d');
+            var chart;
+            var chartinfo = '';
+
+            //SWITCH BETWEEN DATASETS
+            switch (dataset) {
+                case 'carbonandairfilt':
+                    chartinfo = '🛈This line graph provides time series data for the carbon sequestration and air filtration ecosystem services in the urban environment. The dataset this graph is based on was released in 08 August 2019.';    
+                    chart = renderLineChart(data.carbonandairfilt, ctx, 'Habitat', ['Y2015', 'Y2016', 'Y2017'], ['#8fce00', '#FF0000', '#0b5394']);
+                    break;
+                case 'bioriverquality':
+                    chartinfo = '🛈This bar graph visualizes the biological quality of rivers and canals in the UK from 1990, 1993 to 2008. The dataset this graph is based on was published by the Department for Environment, Food and Rural Affairs on October 12 2021 and was updated on data.europa.eu on 01 July 2022.';
+                    chart = renderBarChart(data.bioriverquality, ctx, 'EARegion', ['Qualitygood', 'Qualityfair', 'Qualitypoor'], ['#32e22a', '#eb68f2', '#741b47']);
+                    break;
+                case 'envbehaviours':
+                    chartinfo = '🛈This bar graph demonstrates the environmental behaviours carried out by small and medium enterprises in 2009 in the UK. The dataset this graph is based on was published by Department for Environment, Food and Rural Affairs on October 12 2021 and was updated on data.europa.eu on 01 July 2022.';
+                    chart = renderBarChart(data.envbehaviours, ctx, 'Actions', ['employees0_9', 'employees10_49', 'employees50_240', 'Total'], ['#00008B', '#A020F0', '#93c47d', '#d4af37']);
+                    break;
+                case 'natura2k':
+                    chartinfo = '🛈This line graph visualizes the Natura 2000 barometer statistics. The Natura 2000 Barometer gives an evaluation on the progress made in establishing the Natura 2000 network, both under the Birds and the Habitats Directives. The number and area is calculated using the spatial information provided by the Member States and is published in the Natura 2000 Newsletter. The dataset this graph is based on was published by the European Environment Agency on Dec 20 2020 and was last modified on 22 Apr 2024.';
+                    chart = renderLineChart(data.natura2k, ctx, 'Country', ['SCI', 'SPA', 'Natura2000'], ['#4B006E', '#008B8B', '#8fce00']);
+                    break;
+                default:
+                    console.error('Invalid dataset');
+            }
+
+                     //INFORMATION TEXT ABOVE THE CHARTS
+            var textNode = document.createElement('div');
+                textNode.textContent = chartinfo;
+                textNode.style.fontSize = '16px'; 
+                textNode.style.marginBottom = '50px';
+                textNode.style.paddingLeft = '400px'; 
+                textNode.style.textAlign = 'left';
+                chartContainer.insertBefore(textNode, canvas);
+
+                    //DESCRIPTION BELOW THE CHARTS
+                var chartDesc = document.createElement('div');
+                chartDesc.textContent = getChartDescription(dataset); 
+                chartDesc.style.fontSize = '14px'; 
+                chartDesc.style.marginTop = '80px';
+                chartDesc.style.textAlign = 'center'; 
+                chartContainer.appendChild(chartDesc);
+            window.chart = chart; //MAKE THE chart OBJECT EASILY ACCESSIBLE
+        }
+        function getChartDescription(dataset) {
+            switch (dataset) {
+                case 'carbonandairfilt':
+                    return 'Dataset available at https://www.ons.gov.uk/economy/environmentalaccounts/datasets/carbonsequestrationandairfiltration';
+                case 'bioriverquality':
+                    return 'Dataset available at https://data.europa.eu/data/datasets/biological-quality-of-rivers-and-canals-1990-1993-to-2008?locale=en';
+                case 'envbehaviours':
+                    return 'Dataset available at https://data.europa.eu/data/datasets/environmental-behaviours-carried-out-by-small-and-medium-enterprises?locale=en';
+                case 'natura2k':
+                    return 'Dataset available at https://data.europa.eu/data/datasets/dat-112-en?locale=en';
+                default:
+                    return '';
+            }
+        }
+                //FUNCTION FOR THE CREATION OF LINE CHARTS
+        function renderLineChart(data, ctx, labelKey, dataKeys, colors) {
+            var labels = data.map(item => item[labelKey]);
+            var datasets = dataKeys.map((key, index) => ({
+                label: key,
+                data: data.map(item => parseFloat(item[key])),
+                borderColor: colors[index],
+                borderWidth: 1
+            }));
+
+            return new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    
+                    scales: {
+                        yAxes: [{
+                            ticks: {
+                                beginAtZero: true
+                            }
+                        }]
+                    }
+                }
+            });
+        }
+
+                //FUNCTION FOR THE CREATION OF BAR CHARTS
+        function renderBarChart(data, ctx, labelKey, dataKeys, colors) {
+            var labels = data.map(item => item[labelKey]);
+            var datasets = dataKeys.map((key, index) => ({
+                label: key,
+                data: data.map(item => parseFloat(item[key])),
+                backgroundColor: colors[index]
+            }));
+
+            return new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    
+                    scales: {
+                        yAxes: [{
+                            ticks: {
+                                beginAtZero: true
+                            }
+                        }]
+                    }
+                }
+            });
+        }
+
+        function clearCharts() {
+            var chartContainer = document.getElementById('chartContainer');
+            chartContainer.innerHTML = ''; //CLEAR CHARTS
+                //HOMEPAGE TEXT
+            var homeTextElements = document.querySelectorAll('.hometext');
+            homeTextElements.forEach(function(element) {
+                element.style.display = 'block';
+            });
+        }
+
+        window.onload = function () {
+            clearCharts(); //REMOVE CHARTS WHEN THE PAGE LOADS
+        };
+
+        //UPLOAD FILE FUNCTIONALITY
+        function triggerFileUpload() {
+            document.getElementById('fileInput').click();
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const content = e.target.result;
+                    parseCSVAndRenderChart(content);
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        function parseCSVAndRenderChart(csvData) {
+            const data = CSVToArray(csvData);
+
+            if (data.length > 1) {
+                const labels = data[0];
+                const datasetData = data.slice(1);
+
+                const processedData = datasetData.map(row => {
+                    let obj = {};
+                    labels.forEach((label, index) => {
+                        obj[label] = row[index];
+                    });
+                    return obj;
+                });
+
+                renderCustomChart(processedData, labels);
+            }
+        }
+
+        function CSVToArray(strData, strDelimiter = ",") {
+            const objPattern = new RegExp((
+                "(\\" + strDelimiter + "|\\r?\\n|\\r|^)" +
+                "(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|" +
+                "([^\"\\" + strDelimiter + "\\r\\n]*))"
+            ), "gi");
+
+            const arrData = [[]];
+            let arrMatches = null;
+
+            while (arrMatches = objPattern.exec(strData)) {
+                const strMatchedDelimiter = arrMatches[1];
+                if (strMatchedDelimiter.length && strMatchedDelimiter !== strDelimiter) {
+                    arrData.push([]);
+                }
+
+                const strMatchedValue = arrMatches[2] ?
+                    arrMatches[2].replace(new RegExp("\"\"", "g"), "\"") :
+                    arrMatches[3];
+
+                arrData[arrData.length - 1].push(strMatchedValue);
+            }
+
+            return arrData;
+        }
+
+        function renderCustomChart(data, labels) {
+            var chartContainer = document.getElementById('chartContainer');
+            chartContainer.innerHTML = ''; 
+
+            
+            var canvas = document.createElement('canvas');
+            canvas.style.height = '370px';
+            canvas.style.width = '100%';
+            chartContainer.appendChild(canvas);
+
+            var ctx = canvas.getContext('2d');
+
+            var datasets = labels.slice(1).map((label, index) => ({
+                label: label,
+                data: data.map(item => parseFloat(item[label])),
+                borderColor: 'hsl(' + (360 * index / labels.length) + ', 100%, 50%)',
+                borderWidth: 1
+            }));
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(item => item[labels[0]]),
+                    datasets: datasets
+                },
+                options: {
+                    scales: {
+                        yAxes: [{
+                            ticks: {
+                                beginAtZero: true
+                            }
+                        }]
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
